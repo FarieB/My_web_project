@@ -1,9 +1,14 @@
+// Load environment variables from .env file
+require('dotenv').config();
+
 const mysql = require('mysql');
+
+// Create a MySQL connection using environment variables
 const connection = mysql.createConnection({
-  host: 'localhost',
-  user: 'root',
-  password: '#Farie@1989',
-  database: 'insurance_compare_development'
+  host: process.env.DB_HOST,
+  user: process.env.DB_USER,
+  password: process.env.DB_PASSWORD,
+  database: process.env.DB_NAME
 });
 
 connection.connect((err) => {
@@ -13,3 +18,4 @@ connection.connect((err) => {
   }
   console.log('Connected to MySQL as id ' + connection.threadId);
 });
+

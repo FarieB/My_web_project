@@ -1,3 +1,4 @@
+require('dotenv').config();
 const express = require('express');
 const authMiddleware = require('./models/authMiddleware');
 const app = express();
