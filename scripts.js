@@ -1,4 +1,5 @@
 document.addEventListener('DOMContentLoaded', function () {
+  const insuranceTypeSelect = document.getElementById('insurance-type');
   const productTypeSelect = document.getElementById('product-type');
   const companySelect = document.getElementById('company');
   const comparisonResults = document.getElementById('comparison-results');
@@ -384,63 +385,67 @@ document.addEventListener('DOMContentLoaded', function () {
   };
 
   // Populate the product type dropdown
-  Object.keys(insuranceData).forEach(productType => {
-    const option = document.createElement('option');
-    option.value = productType;
-    option.textContent = productType;
-    productTypeSelect.appendChild(option);
-  });
+  function populateProductDropdown(type) {
+    const products = insuranceData[type] || {};
+    productTypeSelect.innerHTML = '<option value="">Select Product</option>';
+    companySelect.innerHTML = '<option value="">Select Company</option>';
+    productTypeSelect.disabled = false;
+    companySelect.disabled = true;
 
-  productTypeSelect.addEventListener('change', function () {
-    const selectedProductType = this.value;
-    companySelect.innerHTML = ''; // Reset company options
-
-    // Populate company select based on selected product type
-    if (selectedProductType && insuranceData[selectedProductType]) {
-      const productTypes = Object.keys(insuranceData[selectedProductType]);
-      productTypes.forEach(productType => {
-        insuranceData[selectedProductType][productType].forEach(product => {
-          const option = document.createElement('option');
-          option.value = product.Company;
-          option.textContent = product.Company;
-          companySelect.appendChild(option);
-        });
-      });
+    for (const product in products) {
+        const option = document.createElement('option');
+        option.value = product;
+        option.textContent = product;
+        productTypeSelect.appendChild(option);
     }
-  });
+}
 
-  document.getElementById('compare-form').addEventListener('submit', function (event) {
-    event.preventDefault();
+function populateCompanyDropdown(productType) {
+    const productData = insuranceData[insuranceTypeSelect.value][productType] || [];
+    companySelect.innerHTML = '<option value="">Select Company</option>';
+    companySelect.disabled = false;
 
-    const productType = productTypeSelect.value;
-    const company = companySelect.value;
+    productData.forEach(item => {
+        const option = document.createElement('option');
+        option.value = item.Company;
+        option.textContent = item.Company;
+        companySelect.appendChild(option);
+    });
+}
 
-    if (productType && company) {
-      const productData = insuranceData[productType] || {};
-      const productTypes = Object.keys(productData);
-      let productFound = false;
-
-      productTypes.forEach(type => {
-        productData[type].forEach(product => {
-          if (product.Company === company) {
-            comparisonResults.innerHTML = `
-              <h3>Comparison Results</h3>
-              <p><strong>Company:</strong> ${product.Company}</p>
-              <p><strong>Premium:</strong> ${product['Premium (Annual)']}</p>
-              <p><strong>Coverage:</strong> ${product.Coverage}</p>
-              <p><strong>Terms:</strong> ${product['Terms & Conditions']}</p>
-            `;
-            productFound = true;
-          }
-        });
-      });
-
-      if (!productFound) {
-        comparisonResults.innerHTML = '<p>Product not found for the selected company.</p>';
-      }
-    } else {
-      comparisonResults.innerHTML = '<p>Please select both product type and company.</p>';
-    }
-  });
+insuranceTypeSelect.addEventListener('change', function () {
+    populateProductDropdown(this.value);
 });
 
+productTypeSelect.addEventListener('change', function () {
+    populateCompanyDropdown(this.value);
+});
+
+document.getElementById('compare-form').addEventListener('submit', function (e) {
+    e.preventDefault();
+    const type = insuranceTypeSelect.value;
+    const product = productTypeSelect.value;
+    const company = companySelect.value;
+    
+    if (type && product && company) {
+        const productData = insuranceData[type][product] || [];
+        const selectedProduct = productData.find(item => item.Company === company);
+        
+        if (selectedProduct) {
+            comparisonResults.innerHTML = `
+                <h3>Comparison Results</h3>
+                <p><strong>Product Type:</strong> ${type}</p>
+                <p><strong>Product:</strong> ${product}</p>
+                <p><strong>Company:</strong> ${company}</p>
+                <p><strong>Premium (Annual):</strong> ${selectedProduct["Premium (Annual)"]}</p>
+                <p><strong>Coverage:</strong> ${selectedProduct.Coverage}</p>
+                <p><strong>Terms & Conditions:</strong> ${selectedProduct["Terms & Conditions"]}</p>
+            `;
+        } else {
+            comparisonResults.innerHTML = '<p>No data available for the selected company.</p>';
+        }
+    } else {
+        comparisonResults.innerHTML = '<p>Please select all options to compare.</p>';
+    }
+});
+});
