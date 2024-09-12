@@ -1,31 +1,28 @@
 document.addEventListener('DOMContentLoaded', function () {
-  const insuranceData = {
-    /* Your insurance data as provided */
-  };
-
   const productTypeSelect = document.getElementById('product-type');
   const companySelect = document.getElementById('company');
   const comparisonResults = document.getElementById('comparison-results');
 
-  for (const productType in insuranceData) {
-    const option = document.createElement('option');
-    option.value = productType;
-    option.textContent = productType;
-    productTypeSelect.appendChild(option);
-  }
+  // Assume the API URL is hosted on the same server
+  const apiUrl = '/api/compare';
 
   productTypeSelect.addEventListener('change', function () {
     const selectedProductType = this.value;
-    companySelect.innerHTML = '';
+    companySelect.innerHTML = ''; // Reset company options
 
+    // Populate company select based on selected product type
     if (selectedProductType) {
-      const companies = insuranceData[selectedProductType];
-      companies.forEach(company => {
-        const option = document.createElement('option');
-        option.value = company.name;
-        option.textContent = company.name;
-        companySelect.appendChild(option);
-      });
+      fetch(`/api/compare?productType=${selectedProductType}`)
+        .then(response => response.json())
+        .then(data => {
+          data.companies.forEach(company => {
+            const option = document.createElement('option');
+            option.value = company.name;
+            option.textContent = company.name;
+            companySelect.appendChild(option);
+          });
+        })
+        .catch(error => console.error('Error fetching company data:', error));
     }
   });
 
@@ -36,19 +33,22 @@ document.addEventListener('DOMContentLoaded', function () {
     const company = companySelect.value;
 
     if (productType && company) {
-      const selectedProduct = insuranceData[productType].find(p => p.name === company);
-
-      if (selectedProduct) {
-        comparisonResults.innerHTML = `
-          <h3>Comparison Results</h3>
-          <p><strong>Company:</strong> ${selectedProduct.name}</p>
-          <p><strong>Premium:</strong> ${selectedProduct.premium}</p>
-          <p><strong>Coverage:</strong> ${selectedProduct.coverage}</p>
-          <p><strong>Terms:</strong> ${selectedProduct.terms}</p>
-        `;
-      } else {
-        comparisonResults.innerHTML = '<p>No data available for the selected company.</p>';
-      }
+      fetch(`${apiUrl}?productType=${productType}&company=${company}`)
+        .then(response => response.json())
+        .then(data => {
+          if (data.error) {
+            comparisonResults.innerHTML = `<p>${data.error}</p>`;
+          } else {
+            comparisonResults.innerHTML = `
+              <h3>Comparison Results</h3>
+              <p><strong>Company:</strong> ${data.company}</p>
+              <p><strong>Premium:</strong> ${data.premium}</p>
+              <p><strong>Coverage:</strong> ${data.coverage}</p>
+              <p><strong>Terms:</strong> ${data.terms}</p>
+            `;
+          }
+        })
+        .catch(error => console.error('Error fetching comparison data:', error));
     } else {
       comparisonResults.innerHTML = '<p>Please select both product type and company.</p>';
     }

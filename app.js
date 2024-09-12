@@ -1,35 +1,27 @@
+// app.js
+
 const express = require('express');
-const jwt = require('jsonwebtoken');
+const fs = require('fs');
+const path = require('path');
+
 const app = express();
-const port = 5000;
+const PORT = process.env.PORT || 3000;
 
-// Middleware to parse JSON bodies
-app.use(express.json());
+// Load JSON data
+const dataFilePath = path.join(__dirname, 'data.json');
+const insuranceData = JSON.parse(fs.readFileSync(dataFilePath, 'utf-8'));
 
-// Authentication middleware
-function authenticate(req, res, next) {
-    const token = req.headers['x-auth-token'];
-
-    if (!token) {
-        return res.status(401).json({ msg: 'No token, authorization denied' });
-    }
-
-    try {
-        const decoded = jwt.verify(token, 'yourSecretKey');
-        req.user = decoded.user;
-        next();
-    } catch (err) {
-        res.status(401).json({ msg: 'Token is not valid' });
-    }
-}
-
-// Test route
-app.get('/test', authenticate, (req, res) => {
-    res.json({ message: 'This is a test route', user: req.user });
+// Endpoint to get insurance data
+app.get('/api/insurance', (req, res) => {
+  res.json(insuranceData);
 });
 
-// Start server
-app.listen(port, () => {
-    console.log(`Server running on port ${port}`);
+// Add other routes and middleware as necessary
+// Example: Serve static files
+app.use(express.static('public'));
+
+// Start the server
+app.listen(PORT, () => {
+  console.log(`Server is running on port ${PORT}`);
 });
 

@@ -1,30 +1,49 @@
-require('dotenv').config();
 const express = require('express');
-const authMiddleware = require('./models/authMiddleware');
+const fs = require('fs');
+const path = require('path');
+
 const app = express();
 
-// Debugging log to verify environment variables
-console.log('DB_HOST:', process.env.DB_HOST);
-console.log('DB_USER:', process.env.DB_USER);
-console.log('DB_PASSWORD:', process.env.DB_PASSWORD);
-console.log('DB_NAME:', process.env.DB_NAME);
+// Middleware for parsing JSON if needed
+app.use(express.json());
 
-// Middleware and routes setup
-app.use(express.json()); // Middleware for parsing JSON
+// Load insurance data from data.json
+function loadInsuranceData() {
+  const dataPath = path.join(__dirname, 'data.json');
+  const rawData = fs.readFileSync(dataPath);
+  return JSON.parse(rawData);
+}
 
-// Debugging log to verify server start
-console.log("Server is starting...");
+// Define the /api/compare route
+app.get('/api/compare', (req, res) => {
+  const { productType, company } = req.query;
 
-// Example route using the authMiddleware
-app.use('/api/protected', authMiddleware, (req, res) => {
-    res.json({ msg: 'Access granted to protected route!' });
+  if (!productType || !company) {
+    return res.status(400).json({ error: 'Missing productType or company query parameters' });
+  }
+
+  // Load the data from data.json
+  const insuranceData = loadInsuranceData();
+
+  // Find the selected product type
+  const products = insuranceData[productType];
+  if (!products) {
+    return res.status(404).json({ error: `No product type found for ${productType}` });
+  }
+
+  // Find the selected company within the product type
+  const selectedProduct = products.find(p => p.name === company);
+  if (!selectedProduct) {
+    return res.status(404).json({ error: `No company found with name ${company}` });
+  }
+
+  // Return the selected company's data
+  res.json(selectedProduct);
 });
 
-// Example public route without authentication
-app.get('/api/public', (req, res) => {
-    res.json({ msg: 'Public route, no authentication needed' });
-});
-
+// Start the server on port 5000
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+app.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
+});
 
